@@ -3,6 +3,7 @@
 #
 FROM java:7u79-jdk
 MAINTAINER Colin Woodcock "colin.woodcock@gmail.com"
+ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
 
 EXPOSE 8080
 
