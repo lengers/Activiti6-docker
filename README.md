@@ -49,7 +49,7 @@ You will probably want to add custom service tasks and their dependencies to you
 
 In a nutshell you create a new Dockerfile, use `cwoodcock\docker` for the **FROM** statement and you can then add/customise your setup as you see fit.
 
-See [this gist](https://gist.github.com/anonymous/c2b95c430762744e8ee3) for some ideas.
+See [this gist](https://gist.github.com/cwoodcock/9bedaa402ba79b1de13c) for some ideas.
 
 ### Ports
 Some of the commands below use docker's `-P` flag which maps the exposed ports to random ports on the Docker host.  This may/may not be what you want.  You can use `-p 8080:nnnn` instead if you want it assigned to a specific port.
