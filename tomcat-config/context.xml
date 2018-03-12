@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -15,12 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<tomcat-users>
-  <role rolename="admin-gui"/>
-  <role rolename="admin-script"/>
-  <role rolename="manager-gui"/>
-  <role rolename="manager-status"/>
-  <role rolename="manager-script"/>
-  <role rolename="manager-jmx"/>
-  <user username="{{TOMCAT_ADMIN_USER}}" password="{{TOMCAT_ADMIN_PASSWORD}}" roles="admin-gui,admin-script,manager-gui,manager-status,manager-script,manager-jmx"/>
-</tomcat-users>
+<Context antiResourceLocking="false" privileged="true" >
+  <!-- <Valve className="org.apache.catalina.valves.RemoteAddrValve" allow="127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1" /> -->
+  <Manager sessionAttributeValueClassNameFilter="java\.lang\.(?:Boolean|Integer|Long|Number|String)|org\.apache\.catalina\.filters\.CsrfPreventionFilter\$LruCache(?:\$1)?|java\.util\.(?:Linked)?HashMap"/>
+</Context>

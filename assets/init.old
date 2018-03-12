@@ -12,21 +12,17 @@
 set -e
 
 # Show commands
-set -x
-
-# Handle empty variables and unset variables differently
-set -u
+# set -x
 
 # Define some colours for pretty printing
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # Reset
-EMPTY_VAR=''
 
 # This helps for the image build simply by making sure everything that should be set actually has been
 function sanity_check() {
   for var in DB_HOST DB_PORT DB_USER DB_PASS DB_NAME JDBC_URL; do
-    if [ -z ${var+x} ]; then
+    if [ -z ${!var} ]; then
       printf "${RED}Failed sanity check of environment${NC} : $var was not set\n"
       exit 1
     fi
@@ -50,7 +46,7 @@ function configure_mysql() {
   DB_USER=${DB_USER:-"activiti"}
   DB_PASS=${DB_PASS:-${BPMDB_ENV_MYSQL_ROOT_PASSWORD}}
   DB_NAME=${DB_NAME:-"activiti"}
-  JDBC_URL="jdbc:mysql:\\/\\/${DB_HOST}:${DB_PORT}\\/${DB_NAME}"
+  JDBC_URL="jdbc:mysql:\\/\\/${DB_HOST}:${DB_PORT}\\/${DB_NAME}?autoReconnect=true\\&characterEncoding=utf8"
   DB_HYBERNATE="org.hibernate.dialect.MySQLDialect"
 }
 
@@ -70,25 +66,6 @@ function configure_postgres() {
   DB_HYBERNATE="org.hibernate.dialect.PostgreSQLDialect"
 }
 
-function configure_h2() {
-  JDBC_DRIVER_CLASS="org.h2.Driver"
-
-  # If we're not linking we might not have some environment variables, so set the defaults
-  BPMDB_PORT_3306_TCP_ADDR=${BPMDB_PORT_3306_TCP_ADDR:-dbhost} # set bs default host
-  BPMDB_PORT_3306_TCP_PORT=${BPMDB_PORT_3306_TCP_PORT:-3306}     # use 5432 as default port
-  BPMDB_ENV_H2_USER=${BPMDB_ENV_H2_USER:-sa}  # postgres is the default user
-  BPMDB_ENV_H2_PASSWORD=${BPMDB_ENV_H2_PASSWORD:-$EMPTY_VAR}
-
-  DB_HOST=${DB_HOST:-${BPMDB_PORT_5432_TCP_ADDR}}
-  DB_PORT=${DB_PORT:-${BPMDB_PORT_3306_TCP_PORT}}
-  DB_USER=${DB_USER:-${BPMDB_ENV_H2_USER}}
-  DB_PASS=${DB_PASS:-${BPMDB_ENV_H2_PASSWORD}}
-  DB_NAME=${DB_NAME:-"~/activiti"}
-  DB_NAME=$(echo ${DB_NAME} | sed -e 's/\//\\\//g')
-  JDBC_URL="jdbc:h2:tcp:\\/\\/${DB_HOST}:${DB_PORT}\\/${DB_NAME};DB_CLOSE_DELAY=-1"
-  DB_HYBERNATE="org.hibernate.dialect.H2Dialect"
-}
-
 # This performs variable substitution on the db.properties file then copies into both the REST and explorer apps
 function update_db_properties() {
   sed 's/{{JDBC_DRIVER_CLASS}}/'"${JDBC_DRIVER_CLASS}"'/g' -i /assets/config/db.properties
@@ -98,23 +75,6 @@ function update_db_properties() {
   sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/g' -i /assets/config/db.properties
   cp -f /assets/config/db.properties /opt/tomcat/webapps/activiti-rest/WEB-INF/classes
   cp -f /assets/config/db.properties /opt/tomcat/webapps/activiti-app/WEB-INF/classes
-
-  # also edit /opt/tomcat/webapps/activiti-app/WEB-INF/classes/META-INF/activiti-app/activiti-app.properties, as it overrides db.properties for some f***ing reason...
-  sed 's/{{JDBC_DRIVER_CLASS}}/'"${JDBC_DRIVER_CLASS}"'/g' -i /assets/config/activiti-app.properties
-  sed 's/{{JDBC_URL}}/'"${JDBC_URL}"'/g' -i /assets/config/activiti-app.properties
-  sed 's/{{JDBC_USER}}/'"${DB_USER}"'/g' -i /assets/config/activiti-app.properties
-  sed 's/{{JDBC_PASSWORD}}/'"${DB_PASS}"'/g' -i /assets/config/activiti-app.properties
-  sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/g' -i /assets/config/activiti-app.properties
-  sed 's/{{DB_HYBERNATE}}/'"${DB_HYBERNATE}"'/g' -i /assets/config/activiti-app.properties
-  cp -f /assets/config/activiti-app.properties /opt/tomcat/webapps/activiti-app/WEB-INF/classes/META-INF/activiti-app/activiti-app.properties
-
-  #sed 's/{{JDBC_DRIVER_CLASS}}/'"${JDBC_DRIVER_CLASS}"'/g' -i /assets/config/activiti-admin.properties
-  #sed 's/{{JDBC_URL}}/'"${JDBC_URL}"'/g' -i /assets/config/activiti-admin.properties
-  #sed 's/{{JDBC_USER}}/'"${DB_USER}"'/g' -i /assets/config/activiti-admin.properties
-  #sed 's/{{JDBC_PASSWORD}}/'"${DB_PASS}"'/g' -i /assets/config/activiti-admin.properties
-  #sed 's/{{DB_TYPE}}/'"${DB_TYPE}"'/g' -i /assets/config/activiti-admin.properties
-  #sed 's/{{DB_HYBERNATE}}/'"${DB_HYBERNATE}"'/g' -i /assets/config/activiti-admin.properties
-  #cp -f /assets/config/activiti-admin.properties /opt/tomcat/webapps/activiti-admin/WEB-INF/classes/META-INF/activiti-admin/activiti-admin.properties
 
 }
 
@@ -130,9 +90,6 @@ case ${DB_TYPE} in
     ;;
   postgres)
     configure_postgres
-    ;;
-  h2)
-    configure_h2
     ;;
   *)
     printf "${RED}Please specify the DB_TYPE when running this image${NC}\n"
